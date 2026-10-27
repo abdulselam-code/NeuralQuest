@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:NeuralQuest.Controls"
+             x:Class="NeuralQuest.MainPage" BackgroundColor="#030916"
+             SafeAreaEdges="None" Shell.NavBarIsVisible="False">
+    <ContentPage.Resources>
+        <Style x:Key="MenuImageButton" TargetType="ImageButton">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderWidth" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Aspect" Value="AspectFit" />
+            <Setter Property="MinimumWidthRequest" Value="48" />
+            <Setter Property="MinimumHeightRequest" Value="48" />
+        </Style>
+        <Style x:Key="NavigationHitTarget" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderWidth" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinimumWidthRequest" Value="48" />
+            <Setter Property="MinimumHeightRequest" Value="48" />
+        </Style>
+    </ContentPage.Resources>
+
+    <!-- Yalnızca arka plan, sistem çubuklarının ve ekran çentiklerinin altına uzanır. -->
+    <Grid SafeAreaEdges="None" IsClippedToBounds="True">
+        <Image Source="background_lab.png" Aspect="AspectFill"
+               HorizontalOptions="Fill" VerticalOptions="Fill" InputTransparent="True" />
+        <Grid x:Name="MenuEtkilesimAlani" SafeAreaEdges="Container" RowDefinitions="*,Auto">
+            <ScrollView x:Name="MenuScroll" SafeAreaEdges="None" Orientation="Vertical"
+                        HorizontalScrollBarVisibility="Never" VerticalScrollBarVisibility="Never"
+                        SizeChanged="MenuViewport_SizeChanged">
+                <VerticalStackLayout x:Name="MenuContent" SafeAreaEdges="None"
+                                     HorizontalOptions="Center" Padding="0,4" Spacing="2">
+                    <Grid x:Name="HeaderBar" SafeAreaEdges="None" ColumnDefinitions="*,48"
+                          ColumnSpacing="8" MinimumHeightRequest="48" SizeChanged="MenuViewport_SizeChanged">
+                        <VerticalStackLayout SafeAreaEdges="None" Spacing="3" VerticalOptions="Center">
+                            <Label Text="◇  NÖRAL SİSTEM  v1.0" TextColor="#A4DBFF" FontSize="12" CharacterSpacing="1" />
+                            <Label Text="●  ÇEVRİMDIŞI" TextColor="#FF668E" FontSize="12" FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <ImageButton Grid.Column="1" Source="settings_icon.png" Style="{StaticResource MenuImageButton}"
+                                     HeightRequest="48" SemanticProperties.Description="Ayarlar" Clicked="Ayarlar_Tapped" />
+                    </Grid>
+
+                    <!-- PNG'nin yalnızca boş dikey kenarlarını kırp; görseli esnetme. -->
+                    <Grid x:Name="LogoArea" SafeAreaEdges="None" IsClippedToBounds="True"
+                          HorizontalOptions="Center" HeightRequest="72">
+                        <Image x:Name="LogoImage" Source="neural_quest_logo.png" Aspect="AspectFill"
+                               SemanticProperties.Description="Neural Quest — Dijital Hafıza, Sistem Kurtarma"
+                               InputTransparent="True" />
+                    </Grid>
+                    <Grid x:Name="CoreArea" SafeAreaEdges="None" HorizontalOptions="Center"
+                          HeightRequest="140" WidthRequest="140">
+                        <Image Source="neural_core_split.png" Aspect="AspectFit" InputTransparent="True"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                    </Grid>
+                    <Grid x:Name="StatusPanels" SafeAreaEdges="None" HorizontalOptions="Center"
+                          ColumnDefinitions="1.65*,*" ColumnSpacing="6" HeightRequest="64">
+                        <Grid SafeAreaEdges="None" IsClippedToBounds="True">
+                            <Image Source="core_integrity_panel.png" Aspect="AspectFill" InputTransparent="True"
+                                   SemanticProperties.Description="Çekirdek bütünlüğü yüzde sıfır" />
+                        </Grid>
+                        <Grid Grid.Column="1" SafeAreaEdges="None" IsClippedToBounds="True">
+                            <Image Source="critical_error_panel.png" Aspect="AspectFill" InputTransparent="True"
+                                   SemanticProperties.Description="Kritik hata" />
+                        </Grid>
+                    </Grid>
+                    <Label x:Name="ProtocolLabel" Text="KURTARMA PROTOKOLÜNÜ SEÇ" FontSize="11"
+                           FontAttributes="Bold" HorizontalTextAlignment="Center" TextColor="#D8EDFF"
+                           CharacterSpacing="1" SizeChanged="MenuViewport_SizeChanged" />
+
+                    <!-- Özgün neon görsellerde seçim, küçük bir alt çizgiyle belirtilir. -->
+                    <Grid x:Name="LevelsGrid" SafeAreaEdges="None" HorizontalOptions="Center"
+                          ColumnDefinitions="*,*,*" ColumnSpacing="6"
+                          HeightRequest="144">
+                        <ImageButton x:Name="KolaySecim" Grid.Column="0" Source="level_easy.png"
+                                     Style="{StaticResource MenuImageButton}" Clicked="Kolay_Tapped" />
+                        <BoxView x:Name="KolayIndicator" Grid.Column="0" Color="#58E6FF"
+                                 WidthRequest="24" HeightRequest="2" VerticalOptions="End"
+                                 HorizontalOptions="Center" InputTransparent="True" />
+                        <ImageButton x:Name="OrtaSecim" Grid.Column="1" Source="level_medium.png"
+                                     Style="{StaticResource MenuImageButton}" Clicked="Orta_Tapped" />
+                        <BoxView x:Name="OrtaIndicator" Grid.Column="1" Color="#CF91FF"
+                                 WidthRequest="24" HeightRequest="2" VerticalOptions="End"
+                                 HorizontalOptions="Center" InputTransparent="True" />
+                        <ImageButton x:Name="ZorSecim" Grid.Column="2" Source="level_hard.png"
+                                     Style="{StaticResource MenuImageButton}" Clicked="Zor_Tapped" />
+                        <BoxView x:Name="ZorIndicator" Grid.Column="2" Color="#FF789C"
+                                 WidthRequest="24" HeightRequest="2" VerticalOptions="End"
+                                 HorizontalOptions="Center" InputTransparent="True" />
+                    </Grid>
+                    <Label x:Name="SeciliSeviyeLabel" Text="KOLAY PROTOKOL • 12 KART"
+                           HorizontalTextAlignment="Center" TextColor="#58E6FF" FontSize="13"
+                           FontAttributes="Bold" Margin="0,-1,0,0" SizeChanged="MenuViewport_SizeChanged" />
+                    <Grid x:Name="StartArea" SafeAreaEdges="None" HorizontalOptions="Center"
+                          IsClippedToBounds="True" HeightRequest="64">
+                        <ImageButton Source="start_button.png" Style="{StaticResource MenuImageButton}"
+                                     Aspect="AspectFill" SemanticProperties.Description="Sistem onarımını başlat"
+                                     Clicked="Baslat_Tapped" />
+                    </Grid>
+
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Alt menü tüm ekranlarda tek satır ve dört eşit sütundur. PNG oranları,
+                 en az 48 × 48 dokunma alanları ve güvenli alanın üstündeki 8 birim boşluk korunur. -->
+            <Grid x:Name="NavigationGrid" Grid.Row="1" SafeAreaEdges="None"
+                  HorizontalOptions="Center" Margin="4,0,4,8"
+                  ColumnDefinitions="*,*,*,*" RowDefinitions="48" ColumnSpacing="2"
+                  SizeChanged="MenuViewport_SizeChanged">
+                <Grid Grid.Column="0" SafeAreaEdges="None">
+                    <Image Source="nav_achievements.png" Aspect="AspectFit" InputTransparent="True"
+                           HeightRequest="48" VerticalOptions="End"
+                           AutomationProperties.IsInAccessibleTree="False" />
+                    <Button Style="{StaticResource NavigationHitTarget}"
+                            SemanticProperties.Description="Başarılar" Clicked="Basarilar_Tapped" />
+                </Grid>
+                <Grid Grid.Column="1" SafeAreaEdges="None">
+                    <Image Source="nav_statistics.png" Aspect="AspectFit" InputTransparent="True"
+                           HeightRequest="48" VerticalOptions="End"
+                           AutomationProperties.IsInAccessibleTree="False" />
+                    <Button Style="{StaticResource NavigationHitTarget}"
+                            SemanticProperties.Description="İstatistikler" Clicked="Istatistik_Tapped" />
+                </Grid>
+                <Grid Grid.Column="2" SafeAreaEdges="None">
+                    <Image Source="nav_howtoplay.png" Aspect="AspectFit" InputTransparent="True"
+                           HeightRequest="48" VerticalOptions="End"
+                           AutomationProperties.IsInAccessibleTree="False" />
+                    <Button Style="{StaticResource NavigationHitTarget}"
+                            SemanticProperties.Description="Nasıl Oynanır" Clicked="Yardim_Tapped" />
+                </Grid>
+                <Grid Grid.Column="3" SafeAreaEdges="None">
+                    <Image Source="nav_about.png" Aspect="AspectFit" InputTransparent="True"
+                           HeightRequest="48" VerticalOptions="End"
+                           AutomationProperties.IsInAccessibleTree="False" />
+                    <Button Style="{StaticResource NavigationHitTarget}"
+                            SemanticProperties.Description="Hakkında" Clicked="Hakkinda_Tapped" />
+                </Grid>
+            </Grid>
+        </Grid>
+        <controls:NeonBilgiPaneli x:Name="BilgiPaneli" IsVisible="False" ZIndex="20" Kapandi="BilgiPaneli_Kapandi" />
+    </Grid>
+</ContentPage>

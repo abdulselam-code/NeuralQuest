@@ -1,0 +1,68 @@
+# Yeniden üretilebilir .NET/MAUI ve IDE çıktıları
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Yerel raporlar, test kareleri, yedekler ve önizlemeler
+/output/
+/backup/
+/backups/
+**/TestResults/
+*.bak
+*.tmp
+*.temp
+*.log
+*.orig
+*.rej
+
+# Derlenmiş dağıtım paketleri
+*.apk
+*.aab
+*.apks
+*.idsig
+*.ipa
+*.msix
+*.msixbundle
+*.nupkg
+*.snupkg
+
+# Python önbelleği
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# İmzalama anahtarları, sertifikalar ve yerel kimlik bilgileri
+*.keystore
+*.jks
+*.pfx
+*.p12
+*.p8
+*.pem
+*.key
+*.snk
+*.cer
+*.mobileprovision
+keystore.properties
+signing.properties
+*.pubxml
+*.pubxml.user
+.env
+.env.*
+!.env.example
+secrets.json
+secrets.*.json
+credentials.json
+credentials.*.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# İşletim sistemi dosyaları
+.DS_Store
+Thumbs.db
+Desktop.ini
