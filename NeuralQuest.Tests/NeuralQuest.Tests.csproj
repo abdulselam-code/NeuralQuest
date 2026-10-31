@@ -8,6 +8,7 @@
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../NeuralQuest/Services/HikayeIlerlemeServisi.cs" Link="Services/HikayeIlerlemeServisi.cs" />
     <Compile Include="../NeuralQuest/Models/HafizaKarti.cs" Link="Models/HafizaKarti.cs" />
     <Compile Include="../NeuralQuest/Models/OyunOturumu.cs" Link="Models/OyunOturumu.cs" />
     <Compile Include="../NeuralQuest/Models/SistemBildirimAkisi.cs" Link="Models/SistemBildirimAkisi.cs" />

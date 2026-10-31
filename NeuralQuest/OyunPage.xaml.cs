@@ -26,8 +26,11 @@ public partial class OyunPage : ContentPage
     private bool _modalAcik;
     private readonly HudKapanisEfekti _modalKapanis = new();
 
-    public OyunPage(int kartSayisi)
+    private int? _hikayeSeviyesi;
+
+    public OyunPage(int kartSayisi, int? hikayeSeviyesi = null)
     {
+        _hikayeSeviyesi = hikayeSeviyesi;
         InitializeComponent();
         Loaded += Sayfa_Loaded;
         YeniOyunBaslat(kartSayisi);
@@ -127,7 +130,7 @@ public partial class OyunPage : ContentPage
         BildirimleriTemizle();
         IslemleriIptalEt();
         _oyun?.Sonlandir();
-        _oyun = new OyunOturumu(kartSayisi);
+        _oyun = new OyunOturumu(kartSayisi, hikayeSeviyesi: _hikayeSeviyesi);
         _bildirimAkisi = new SistemBildirimAkisi();
         if (!_gorunur)
             _oyun.Duraklat();
@@ -165,7 +168,7 @@ public partial class OyunPage : ContentPage
             _kartGorunumleri.Add(kart.Kimlik, (gorsel, dugme));
         }
 
-        ProtokolBasligi.Text = $"{_oyun.Seviye.ToString().ToUpperInvariant()} PROTOKOLÜ";
+        ProtokolBasligi.Text = _hikayeSeviyesi is int seviye ? $"HİKÂYE MODU • SEVİYE {seviye} / 9" : $"{_oyun.Seviye.ToString().ToUpperInvariant()} PROTOKOLÜ";
         ProtokolDetayi.Text = $"{kartSayisi} KART • {_oyun.ToplamCift} MODÜL";
         DurumLabel.Text = "İki kart açarak modülleri eşleştir.";
         PaneliGuncelle();
@@ -530,7 +533,7 @@ public partial class OyunPage : ContentPage
                 YenidenBaslat_Clicked(sender, e);
                 break;
             case OyunPaneli.YenidenBaslat:
-                YeniOyunBaslat(OyunOturumu.KartSayisi(_oyun.Seviye));
+                YeniOyunBaslat(_oyun.Kartlar.Count);
                 PaneliGuncelle();
                 break;
             case OyunPaneli.Cikis:
@@ -545,7 +548,7 @@ public partial class OyunPage : ContentPage
             return;
         if (_oyun.Tamamlandi)
         {
-            YeniOyunBaslat(OyunOturumu.KartSayisi(_oyun.Seviye));
+            YeniOyunBaslat(_oyun.Kartlar.Count);
             return;
         }
 
@@ -575,6 +578,7 @@ public partial class OyunPage : ContentPage
     {
         if (!_gorunur || _donuluyor)
             return;
+        if (_oyun.Tamamlandi) TamamlananOyunuKaydet();
         _donuluyor = true;
         BildirimleriDuraklat();
         IslemleriIptalEt();
@@ -611,14 +615,15 @@ public partial class OyunPage : ContentPage
             return;
         try
         {
-            CihazKayitlari.Istatistikler.Kaydet(_oyun.SonucuAl());
+            if (_hikayeSeviyesi.HasValue) CihazKayitlari.Hikaye.Kaydet(_oyun);
+            else CihazKayitlari.Istatistikler.Kaydet(_oyun.SonucuAl());
             _kaydedilenOyun = _oyun.OyunKimligi;
-            KayitDurumu.Text = "İstatistikler bu cihazda saklandı.";
+            KayitDurumu.Text = _hikayeSeviyesi.HasValue ? "Hikâye ilerlemesi bu cihazda saklandı." : "İstatistikler bu cihazda saklandı.";
         }
         catch (Exception hata)
         {
             System.Diagnostics.Debug.WriteLine(hata);
-            KayitDurumu.Text = "İstatistikler cihazda saklanamadı.";
+            KayitDurumu.Text = "Kayıt cihazda saklanamadı. Sonraki seviye veya ana menü ile tekrar denenecek.";
         }
     }
 
@@ -626,16 +631,16 @@ public partial class OyunPage : ContentPage
     {
         // Bekleyen ilerleme mesajları sonuç panelinin üstüne taşınmaz.
         BildirimleriTemizle();
-        TamamlanmaBasligi.Text = SistemBildirimAkisi.TamamlanmaMesaji;
+        TamamlanmaBasligi.Text = _hikayeSeviyesi == 9 ? "TÜM SEVİYELER TAMAMLANDI!" : _hikayeSeviyesi is int seviye ? $"SEVİYE {seviye} TAMAMLANDI!" : SistemBildirimAkisi.TamamlanmaMesaji;
         TamamlananOyunuKaydet();
         var sonuc = _oyun.SonucuAl();
         _panelAkisi.Kapat();
         OyunModaliniKapat(animasyonlu: false);
         bool ilkAciliyor = !SonucKatmani.IsVisible;
         OyunGorunumu.ZIndex = 0;
-        SonucBilgisi.Text = $"Protokol: {sonuc.Seviye}\nSüre: {OyunOturumu.SureMetni(sonuc.Sure)}\n" +
+        SonucBilgisi.Text = (_hikayeSeviyesi is int hikaye ? $"Hikâye Modu: Seviye {hikaye} / 9\n" : $"Protokol: {sonuc.Seviye}\n") + $"Süre: {OyunOturumu.SureMetni(sonuc.Sure)}\n" +
                            $"Hamle: {sonuc.Hamle}\nSkor: {sonuc.Skor:N0}\nKurtarılan modül: {sonuc.KurtarilanModul}";
-        SonrakiSeviyeDugmesi.IsVisible = sonuc.Seviye != OyunSeviyesi.Zor;
+        SonrakiSeviyeDugmesi.IsVisible = _hikayeSeviyesi.HasValue ? _oyun.SonrakiHikayeSeviyesiVar : sonuc.Seviye != OyunSeviyesi.Zor;
         SonucKatmani.IsVisible = true;
         HudGecisi.OneAl(SonucKatmani);
         SonucPaneli.Shadow = new Shadow
@@ -651,12 +656,25 @@ public partial class OyunPage : ContentPage
     private void TekrarOyna_Clicked(object? sender, EventArgs e)
     {
         if (_gorunur && !_dialogAcik && _oyun.Tamamlandi)
-            YeniOyunBaslat(OyunOturumu.KartSayisi(_oyun.Seviye));
+        {
+            TamamlananOyunuKaydet();
+            if (_hikayeSeviyesi.HasValue && _kaydedilenOyun != _oyun.OyunKimligi) return;
+            YeniOyunBaslat(_oyun.Kartlar.Count);
+        }
     }
 
     private void SonrakiSeviye_Clicked(object? sender, EventArgs e)
     {
-        if (_gorunur && !_dialogAcik && _oyun.Tamamlandi && _oyun.Seviye != OyunSeviyesi.Zor)
+        if (!_gorunur || _dialogAcik || !_oyun.Tamamlandi) return;
+        TamamlananOyunuKaydet();
+        if (_kaydedilenOyun != _oyun.OyunKimligi) return;
+        if (_hikayeSeviyesi.HasValue)
+        {
+            if (!_oyun.SonrakiHikayeSeviyesiVar) return;
+            _hikayeSeviyesi++;
+            YeniOyunBaslat(HikayeIlerlemeServisi.KartSayisi(_hikayeSeviyesi.Value));
+        }
+        else if (_oyun.Seviye != OyunSeviyesi.Zor)
             YeniOyunBaslat(_oyun.Seviye == OyunSeviyesi.Kolay ? 16 : 20);
     }
 
@@ -685,12 +703,18 @@ public partial class OyunPage : ContentPage
             double kartYuksekligi = Math.Min(
                 (OyunDuzeni.HeightRequest - sabitYukseklik - (_oyun.Satir - 1) * bosluk) / _oyun.Satir,
                 (genislik - OyunDuzeni.Padding.HorizontalThickness - (_oyun.Sutun - 1) * bosluk) / _oyun.Sutun / oran);
+            if (_hikayeSeviyesi.HasValue) kartYuksekligi = Math.Min(kartYuksekligi, 112);
             KartAlani.WidthRequest = _oyun.Sutun * kartYuksekligi * oran + (_oyun.Sutun - 1) * bosluk;
             KartAlani.HeightRequest = _oyun.Satir * kartYuksekligi + (_oyun.Satir - 1) * bosluk;
+            // Son satır dolu değilse kalan kartları da tahta merkezine hizala.
+            int sonSatirKartlari = _oyun.Kartlar.Count % _oyun.Sutun;
+            foreach (var hucre in KartAlani.Children.OfType<Grid>())
+                hucre.TranslationX = _hikayeSeviyesi.HasValue && sonSatirKartlari > 0 && Grid.GetRow(hucre) == _oyun.Satir - 1
+                    ? (_oyun.Sutun - sonSatirKartlari) * (kartYuksekligi * oran + bosluk) / 2 : 0;
             // Genişliğe göre sınırlanan dört satırlı tahtalarda fazla üst boşluğun
             // yalnız bir bölümünü al. Kart boyutu, bildirim alanı ve Zor düzeni korunur.
             double artanAlan = Math.Max(0, OyunDuzeni.HeightRequest - sabitYukseklik - KartAlani.HeightRequest);
-            bool yukariDengele = _oyun.Seviye != OyunSeviyesi.Zor && artanAlan > 0.5;
+            bool yukariDengele = !_hikayeSeviyesi.HasValue && _oyun.Seviye != OyunSeviyesi.Zor && artanAlan > 0.5;
             KartAlani.VerticalOptions = yukariDengele ? LayoutOptions.Start : LayoutOptions.Center;
             KartAlani.Margin = yukariDengele
                 ? new Thickness(0, artanAlan / 2 - Math.Min(24, artanAlan / 4), 0, 0)

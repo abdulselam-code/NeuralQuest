@@ -467,6 +467,122 @@ Test("Mükemmel Onarım yalnızca yeni ve doğrulanmış taramasız sonuçla aç
     Dogrula(YeniServis().Oku().TaramasizOyunTamamlandi, "Sonraki taramalı oyun başarıyı geri kilitledi.");
 });
 
+
+foreach (int seviye in Enumerable.Range(1, HikayeIlerlemeServisi.SeviyeSayisi))
+{
+    int n = seviye;
+    Test($"Hikâye {n}: kartlar, geçiş, duraklatma, yeniden başlatma", () =>
+    {
+        int adet = HikayeIlerlemeServisi.KartSayisi(n);
+        var oyun = new OyunOturumu(adet, new Random(n), hikayeSeviyesi: n);
+        Dogrula(oyun.HikayeSeviyesi == n && oyun.ToplamCift == n + 1 && oyun.Kartlar.Count == 2 * (n + 1), "Seviye/kart sayısı yanlış.");
+        Dogrula(oyun.Kartlar.GroupBy(k => k.ModulKimligi).All(g => g.Count() == 2), "Çiftler yanlış.");
+        Dogrula(oyun.Sutun * oyun.Satir >= adet && oyun.Sutun * (oyun.Satir - 1) < adet, "Tahta düzeni yanlış.");
+        Dogrula(oyun.SonrakiHikayeSeviyesiVar == (n < 9), "Sonraki seviye/son seviye yanlış.");
+        var saat = new DenemeSaati();
+        var duraklayan = new OyunOturumu(adet, saat: saat, hikayeSeviyesi: n);
+        saat.Ilerle(5);
+        duraklayan.KartAc(duraklayan.Kartlar[0].Kimlik);
+        duraklayan.Duraklat();
+        saat.Ilerle(20);
+        Dogrula(duraklayan.Sure.TotalSeconds == 5 && !duraklayan.EtkilesimeAcik && duraklayan.Kartlar.All(k => !k.Acik), "Duraklatma bozuk.");
+        duraklayan.DevamEt();
+        saat.Ilerle(2);
+        Dogrula(duraklayan.EtkilesimeAcik && duraklayan.Sure.TotalSeconds == 7, "Devam etme bozuk.");
+        var yeniden = new OyunOturumu(duraklayan.Kartlar.Count, hikayeSeviyesi: duraklayan.HikayeSeviyesi);
+        Dogrula(yeniden.HikayeSeviyesi == n && yeniden.Hamle == 0 && !yeniden.TaramaKullanildi && yeniden.OyunKimligi != duraklayan.OyunKimligi, "Yeniden başlatma bozuk.");
+        Tamamla(oyun);
+        Dogrula(oyun.Tamamlandi && oyun.SonucuAl().KurtarilanModul == n + 1, "Seviye bitmedi.");
+    });
+}
+Test("Hikâye: kalıcı ilerleme, yarım oyun, eski oturum, tekrar kayıt ve yeniden oynama", () =>
+{
+    var depo = new Dictionary<string, string>();
+    HikayeIlerlemeServisi Servis() => new(k => depo.GetValueOrDefault(k, ""), (k,v) => depo[k] = v);
+    Dogrula(HikayeIlerlemeServisi.SeviyeSayisi == 9 && Servis().Baslat() == 1, "İlk giriş yanlış.");
+    OyunOturumu? eski = null;
+    for (int n = 1; n <= 9; n++)
+    {
+        var oyun = new OyunOturumu(HikayeIlerlemeServisi.KartSayisi(n), hikayeSeviyesi: n);
+        Esles(oyun, 0);
+        oyun.Duraklat();
+        Servis().Kaydet(oyun);
+        Dogrula(Servis().Baslat() == n, "Yarım seviye ilerledi veya yeniden açılış kayboldu.");
+        oyun.DevamEt();
+        for (int m = 1; m < oyun.ToplamCift; m++) Esles(oyun, m);
+        Servis().Kaydet(oyun);
+        Servis().Kaydet(oyun);
+        if (eski is not null) Servis().Kaydet(eski);
+        Dogrula(Servis().Oku().Seviye == n + 1 && Servis().Oku().Tamamlandi == (n == 9), "Geçiş veya son kayıt yanlış.");
+        eski = oyun;
+    }
+    Dogrula(Servis().Baslat() == 1 && Servis().Oku().Tamamlandi, "Tekrar oynama tamamlanma kaydını sildi.");
+    var tekrar = new OyunOturumu(4, hikayeSeviyesi: 1);
+    Tamamla(tekrar); Servis().Kaydet(tekrar);
+    Dogrula(Servis().Baslat() == 2 && Servis().Oku().Tamamlandi, "Yeni tur devamı kayboldu.");
+});
+Test("Hikâye: serbest oyun ve eski istatistik kayıtları bağımsız", () =>
+{
+    var depo = new Dictionary<string, string>();
+    var istatistik = new OyunIstatistikServisi(k => depo.GetValueOrDefault(k, ""), (k,v) => depo[k] = v);
+    var hikaye = new HikayeIlerlemeServisi(k => depo.GetValueOrDefault(k, ""), (k,v) => depo[k] = v);
+    foreach (var seviye in Enum.GetValues<OyunSeviyesi>())
+    {
+        var serbest = new OyunOturumu(OyunOturumu.KartSayisi(seviye));
+        Tamamla(serbest); istatistik.Kaydet(serbest.SonucuAl()); hikaye.Kaydet(serbest);
+    }
+    string once = depo["neuralquest.istatistik.v1"];
+    Dogrula(hikaye.Baslat() == 1 && istatistik.Oku().ToplamTamamlananOyun == 3, "Serbest oyun hikâyeyi ilerletti.");
+    var oyun = new OyunOturumu(4, hikayeSeviyesi: 1); Tamamla(oyun); hikaye.Kaydet(oyun);
+    Dogrula(depo["neuralquest.istatistik.v1"] == once && hikaye.Baslat() == 2, "Eski istatistikler değişti.");
+    Dogrula(Enum.GetValues<OyunSeviyesi>().Select(OyunOturumu.KartSayisi).SequenceEqual(new[] {12,16,20}), "Serbest oyun sayıları değişti.");
+});
+Test("Hikâye: geçersiz seviyeler ve bozuk kayıt", () =>
+{
+    foreach (int n in new[] {0,10,-1})
+    {
+        bool reddedildi = false;
+        try { _ = HikayeIlerlemeServisi.KartSayisi(n); } catch (ArgumentOutOfRangeException) { reddedildi = true; }
+        Dogrula(reddedildi, "Geçersiz seviye kabul edildi.");
+    }
+    bool uyusmaz = false;
+    try { _ = new OyunOturumu(20, hikayeSeviyesi: 1); } catch (ArgumentOutOfRangeException) { uyusmaz = true; }
+    Dogrula(uyusmaz, "Seviye/kart uyuşmazlığı kabul edildi.");
+    foreach (string veri in new[] {"", "bozuk", "0|0", "11|1", "10|0", "2|x"})
+        Dogrula(new HikayeIlerlemeServisi(_ => veri, (_,_) => {}).Baslat() == 1, "Bozuk kayıt güvenli açılmadı.");
+});
+Test("Hikâye: kayıt hatasında ilerleme açılmaz, tekrar denenebilir", () =>
+{
+    string kayit = ""; bool hata = true;
+    var servis = new HikayeIlerlemeServisi(_ => kayit, (_,v) => { if (hata) throw new IOException("Depolama hatası"); kayit = v; });
+    var oyun = new OyunOturumu(4, hikayeSeviyesi: 1); Tamamla(oyun);
+    bool yakalandi = false;
+    try { servis.Kaydet(oyun); } catch (IOException) { yakalandi = true; }
+    Dogrula(yakalandi && servis.Baslat() == 1, "Başarısız kayıt ilerletti.");
+    hata = false; servis.Kaydet(oyun);
+    Dogrula(servis.Baslat() == 2, "Kayıt tekrar denenemedi.");
+});
+Test("Hikâye: geri tuşu ve çıkış onayı ilerlemeyi açmaz", () =>
+{
+    var panel = new OyunPanelAkisi();
+    string kayit = "";
+    var servis = new HikayeIlerlemeServisi(_ => kayit, (_,v) => kayit = v);
+    var oyun = new OyunOturumu(4, hikayeSeviyesi: 1);
+    Esles(oyun, 0); panel.CikisOnayi(); oyun.Duraklat(); panel.Geri(); oyun.DevamEt();
+    Dogrula(!panel.Acik && oyun.EslesenCift == 1 && oyun.EtkilesimeAcik, "Geri dönüş oyunu bozdu.");
+    oyun.Sonlandir(); servis.Kaydet(oyun);
+    Dogrula(servis.Baslat() == 1, "Çıkış seviye açtı.");
+});
+
+Test("Hikâye: kilitli tamamlanmış oturum ilerlemeyi atlayamaz", () =>
+{
+    string kayit = "";
+    var servis = new HikayeIlerlemeServisi(_ => kayit, (_,v) => kayit = v);
+    var oyun = new OyunOturumu(20, hikayeSeviyesi: 9);
+    Tamamla(oyun); servis.Kaydet(oyun);
+    Dogrula(servis.Baslat() == 1 && !servis.Oku().Tamamlandi, "Kilitli seviye ilerlemeyi atladı.");
+});
+
 Console.WriteLine($"\n{basarili} mantık testi başarıyla tamamlandı.");
 
 sealed class DenemeSaati : TimeProvider

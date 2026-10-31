@@ -101,6 +101,69 @@
                                      Clicked="Baslat_Tapped" />
                     </Grid>
 
+                    <!-- Aynı HUD diliyle tek, ortalanmış görev kartı; tüm yüzey tek dokunma hedefidir. -->
+                    <Grid x:Name="HikayeKarti" SafeAreaEdges="None" HorizontalOptions="Center"
+                          WidthRequest="320" MinimumHeightRequest="92" Margin="0,6,0,8"
+                          SizeChanged="MenuViewport_SizeChanged">
+                        <controls:HudCerceve Vurgu="#58E6FF" IkincilVurgu="#CF91FF" Enerji="1"
+                                             IcerikPayi="16,12" InputTransparent="True">
+                            <controls:HudCerceve.Shadow>
+                                <Shadow Brush="#58E6FF" Offset="0,0" Radius="10" Opacity="0.24" />
+                            </controls:HudCerceve.Shadow>
+                            <controls:HudCerceve.Govde>
+                                <Grid SafeAreaEdges="None" ColumnDefinitions="52,*,16" ColumnSpacing="10">
+                                    <Image Source="neural_core_split.png" Aspect="AspectFit"
+                                           WidthRequest="52" HeightRequest="52" VerticalOptions="Center"
+                                           AutomationProperties.IsInAccessibleTree="False" />
+                                    <VerticalStackLayout Grid.Column="1" SafeAreaEdges="None" Spacing="5"
+                                                         VerticalOptions="Center">
+                                        <Label Text="HİKÂYE MODU" FontSize="15" FontAttributes="Bold"
+                                               CharacterSpacing="1" TextColor="#58E6FF" />
+                                        <Label Text="2–10 ÇİFT • 9 SEVİYE" FontSize="10"
+                                               CharacterSpacing="0.5" TextColor="#D8EDFF" />
+                                        <BoxView Color="#CF91FF" WidthRequest="28" HeightRequest="2"
+                                                 HorizontalOptions="Start" Margin="0,2,0,0" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="2" Text="›" FontSize="26" TextColor="#CF91FF"
+                                           HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                </Grid>
+                            </controls:HudCerceve.Govde>
+                        </controls:HudCerceve>
+                        <Button Style="{StaticResource NavigationHitTarget}" Margin="7" CornerRadius="8"
+                                BorderWidth="1" BorderColor="Transparent" Clicked="Hikaye_Clicked"
+                                SemanticProperties.Description="Hikâye Modu, 2–10 çift, 9 seviye. Oynamak için dokun.">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroupList>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal">
+                                            <VisualState.Setters>
+                                                <Setter Property="BackgroundColor" Value="Transparent" />
+                                                <Setter Property="BorderColor" Value="Transparent" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Property="BackgroundColor" Value="#2258E6FF" />
+                                                <Setter Property="BorderColor" Value="#58E6FF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Property="BackgroundColor" Value="#1458E6FF" />
+                                                <Setter Property="BorderColor" Value="#CF91FF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Property="BorderColor" Value="#CF91FF" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateGroupList>
+                            </VisualStateManager.VisualStateGroups>
+                        </Button>
+                    </Grid>
+
                 </VerticalStackLayout>
             </ScrollView>
 

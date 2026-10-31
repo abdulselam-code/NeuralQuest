@@ -31,11 +31,13 @@ public partial class MainPage : ContentPage
         {
             double width = Math.Min(Math.Max(48, MenuScroll.Width - 24), 480);
             MenuContent.WidthRequest = width;
+            HikayeKarti.WidthRequest = Math.Min(width, 320);
             AltMenuyuBoyutlandir();
 
             double textHeight = Math.Max(48, HeaderBar.Height) +
                                 Math.Max(18, ProtocolLabel.Height) +
-                                Math.Max(18, SeciliSeviyeLabel.Height);
+                                Math.Max(18, SeciliSeviyeLabel.Height) +
+                                Math.Max(92, HikayeKarti.Height) + HikayeKarti.Margin.VerticalThickness;
             double available = MenuScroll.Height - MenuContent.Padding.VerticalThickness -
                                MenuContent.Spacing * (MenuContent.Children.Count - 1) - textHeight;
 
@@ -165,6 +167,24 @@ public partial class MainPage : ContentPage
             kolay ? "#58E6FF" :
             orta ? "#CF91FF" :
                    "#FF789C");
+    }
+
+    private async void Hikaye_Clicked(object? sender, EventArgs e)
+    {
+        if (_oyunAciliyor || BilgiPaneli.Acik || (Shell.Current?.CurrentPage is Page sayfa && sayfa != this)) return;
+        _oyunAciliyor = true;
+        try
+        {
+            int seviye = CihazKayitlari.Hikaye.Baslat();
+            await Navigation.PushAsync(new OyunPage(HikayeIlerlemeServisi.KartSayisi(seviye), seviye));
+        }
+        catch (Exception hata)
+        {
+            System.Diagnostics.Debug.WriteLine(hata);
+            _oyunAciliyor = false;
+            BilgiGoster("OYUN AÇILAMADI", "", [Metin("Hikâye Modu başlatılamadı. Tekrar deneyebilirsin.")]);
+        }
+        finally { _oyunAciliyor = false; }
     }
 
     // OYUNU BAŞLAT

@@ -28,8 +28,10 @@ public sealed class OyunOturumu
     public Guid OyunKimligi { get; } = Guid.NewGuid();
     public OyunSeviyesi Seviye { get; }
     public IReadOnlyList<HafizaKarti> Kartlar { get; }
-    public int Sutun => Seviye == OyunSeviyesi.Kolay ? 3 : 4;
-    public int Satir => Seviye == OyunSeviyesi.Zor ? 5 : 4;
+    public int? HikayeSeviyesi { get; }
+    public bool SonrakiHikayeSeviyesiVar => HikayeSeviyesi is >= 1 and < 9;
+    public int Sutun => HikayeSeviyesi.HasValue ? ToplamCift switch { 2 or 3 => 2, 4 or 5 or 6 => 3, _ => 4 } : Seviye == OyunSeviyesi.Kolay ? 3 : 4;
+    public int Satir => (Kartlar.Count + Sutun - 1) / Sutun;
     public int ToplamCift => _kartlar.Length / 2;
     public int Hamle { get; private set; }
     public int EslesenCift { get; private set; }
@@ -48,13 +50,17 @@ public sealed class OyunOturumu
     public int Skor => (int)Math.Max(0,
         ToplamCift * 1000L - Math.Max(0, Hamle - ToplamCift) * 100L - (long)Sure.TotalSeconds * 5);
 
-    public OyunOturumu(int kartSayisi, Random? rastgele = null, TimeProvider? saat = null)
+    public OyunOturumu(int kartSayisi, Random? rastgele = null, TimeProvider? saat = null, int? hikayeSeviyesi = null)
     {
+        if (hikayeSeviyesi.HasValue && (hikayeSeviyesi is < 1 or > 9 || kartSayisi != (hikayeSeviyesi + 1) * 2))
+            throw new ArgumentOutOfRangeException(nameof(hikayeSeviyesi));
+        HikayeSeviyesi = hikayeSeviyesi;
         Seviye = kartSayisi switch
         {
             12 => OyunSeviyesi.Kolay,
             16 => OyunSeviyesi.Orta,
             20 => OyunSeviyesi.Zor,
+            _ when hikayeSeviyesi.HasValue => OyunSeviyesi.Kolay,
             _ => throw new ArgumentOutOfRangeException(nameof(kartSayisi), "Kart sayısı 12, 16 veya 20 olmalıdır.")
         };
         _saat = saat ?? TimeProvider.System;
